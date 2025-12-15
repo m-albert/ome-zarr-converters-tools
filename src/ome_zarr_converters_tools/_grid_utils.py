@@ -45,8 +45,11 @@ class GridSetup:
     num_y: int = 0
 
 
-def check_if_regular_grid(tiles: list[Tile]) -> tuple[str | None, GridSetup]:
-    """Find the grid size of a list of tiles."""
+def check_if_regular_grid(
+    tiles: list[Tile], 
+    atol: float = 5.0  # 5 µm absolute tolerance for microscopy positioning errors
+) -> tuple[str | None, GridSetup]:
+    """Find the grid size of a list of tiles"""
     if len(tiles) == 0:
         return "Empty list of tiles", GridSetup()
 
@@ -60,7 +63,7 @@ def check_if_regular_grid(tiles: list[Tile]) -> tuple[str | None, GridSetup]:
     if len(tiles_length_x) == 0:
         return "Empty list of tiles", GridSetup()
 
-    if np.allclose(tiles_length_x, tiles_length_x[0]):
+    if np.allclose(tiles_length_x, tiles_length_x[0], rtol=0, atol=atol):
         length_x = tiles_length_x[0]
     else:
         all_lengths = np.unique(tiles_length_x)
@@ -70,13 +73,14 @@ def check_if_regular_grid(tiles: list[Tile]) -> tuple[str | None, GridSetup]:
     if len(tiles_length_y) == 0:
         return "Empty list of tiles", GridSetup()
 
-    if np.allclose(tiles_length_y, tiles_length_y[0]):
+    if np.allclose(tiles_length_y, tiles_length_y[0], rtol=0, atol=atol):
         length_y = tiles_length_y[0]
     else:
         all_lengths = np.unique(tiles_length_y)
         return f"Not all lengths are the same: {all_lengths}", GridSetup()
+    
     # ------------------------------------------
-    # Test 2: Check if all offsets are the same
+    # Test 2: Check if all offsets are the same (with tolerance)
     # ------------------------------------------
     # Find the tiles offsets
     pos_top_l_x = [tile.top_l.x for tile in tiles]
@@ -86,8 +90,9 @@ def check_if_regular_grid(tiles: list[Tile]) -> tuple[str | None, GridSetup]:
 
     if len(offsets_x) == 0:
         offset_x = 1.0
-    elif np.allclose(offsets_x, offsets_x[0]):
-        offset_x = offsets_x[0]
+    elif np.allclose(offsets_x, offsets_x[0], rtol=0, atol=atol):
+        # Use median for robustness against outliers
+        offset_x = float(np.median(offsets_x))
     else:
         # Not all offsets are the same
         unique_offsets = np.unique(offsets_x)
@@ -100,12 +105,14 @@ def check_if_regular_grid(tiles: list[Tile]) -> tuple[str | None, GridSetup]:
 
     if len(offsets_y) == 0:
         offset_y = 1.0
-    elif np.allclose(offsets_y, offsets_y[0]):
-        offset_y = offsets_y[0]
+    elif np.allclose(offsets_y, offsets_y[0], rtol=0, atol=atol):
+        # Use median for robustness against outliers
+        offset_y = float(np.median(offsets_y))
     else:
         # Not all offsets are the same
         unique_offsets = np.unique(offsets_y)
         return f"Not all y offsets are the same: {unique_offsets}", GridSetup()
+    
     # ------------------------------------------
     # Test 3: Check the edge case where the grid is slanted
     # ------------------------------------------
